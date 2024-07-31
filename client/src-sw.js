@@ -7,6 +7,23 @@ const { precacheAndRoute } = require('workbox-precaching/precacheAndRoute');
 
 precacheAndRoute(self.__WB_MANIFEST);
 
+const staticCacheName = 'jate-static'
+const assets = ['/', '/index.html', '/js/database.js', '/js/editor.js', '/js/header.js', '/js/index.js', '/js/install.js', '/css/style.css']
+
+self.addEventListener('install', (evt) => {
+  evt.waitUntil(
+    caches.open(staticCacheName)
+      .then((cache) => {
+        console.log('caching shell assets')
+        cache.addAll(assets)
+      })
+  )
+})
+
+self.addEventListener('activate', (evt) => {
+})
+
+
 const pageCache = new CacheFirst({
   cacheName: 'page-cache',
   plugins: [
@@ -26,5 +43,14 @@ warmStrategyCache({
 
 registerRoute(({ request }) => request.mode === 'navigate', pageCache);
 
-// TODO: Implement asset caching
+self.addEventListener('fetch', (evt) => {
+  evt.respondWith(
+    caches.match(evt.request)
+      .then(
+        (cacheRes) => {
+          return cacheRes || fetch(evt.request)
+        }
+      )
+  )
+})
 registerRoute();
